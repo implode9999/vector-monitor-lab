@@ -794,13 +794,12 @@ function drawWrappedSaucer(p: VectorProgram, saucer: Saucer) {
 function drawWrappedExplosion(p: VectorProgram, explosion: RockExplosion) {
   const step = rockExplosionStep(explosion);
   const radius = 0.12 * explosion.scale;
-  const intensity = 1.18;
   const ox = wrapOffsetX(explosion.x, radius);
   const oy = wrapOffsetY(explosion.y, radius);
-  drawExplosionPic(p, explosion.x, explosion.y, explosion.scale, step, intensity);
-  if (ox !== 0) drawExplosionPic(p, explosion.x + ox, explosion.y, explosion.scale, step, intensity);
-  if (oy !== 0) drawExplosionPic(p, explosion.x, explosion.y + oy, explosion.scale, step, intensity);
-  if (ox !== 0 && oy !== 0) drawExplosionPic(p, explosion.x + ox, explosion.y + oy, explosion.scale, step, intensity);
+  drawExplosionPic(p, explosion.x, explosion.y, explosion.scale, step);
+  if (ox !== 0) drawExplosionPic(p, explosion.x + ox, explosion.y, explosion.scale, step);
+  if (oy !== 0) drawExplosionPic(p, explosion.x, explosion.y + oy, explosion.scale, step);
+  if (ox !== 0 && oy !== 0) drawExplosionPic(p, explosion.x + ox, explosion.y + oy, explosion.scale, step);
 }
 
 function drawRockAt(p: VectorProgram, rock: Rock, ox: number, oy: number) {
@@ -857,13 +856,13 @@ function drawShot(p: VectorProgram, x: number, y: number, intensity: number) {
   p.dwell(0.12);
 }
 
-function drawExplosionPic(p: VectorProgram, x: number, y: number, scale: number, step: RockExplosionStep, intensity: number) {
+function drawExplosionPic(p: VectorProgram, x: number, y: number, scale: number, step: RockExplosionStep) {
   const points = SHARPNEL_PATTERNS[step.pic] ?? SHARPNEL_PATTERNS[SHARPNEL_PATTERNS.length - 1];
-  const pointScale = 0.145 * scale * step.scale;
+  const pointScale = 0.19 * scale * step.scale;
   for (const point of points) {
     const px = x + point.x * pointScale;
     const py = y + point.y * pointScale;
-    p.moveTo(px, py).lineTo(px, py, intensity);
+    p.moveTo(px, py).lineTo(px, py, ROCK_EXPLOSION_INTENSITY);
   }
 }
 
@@ -872,7 +871,7 @@ function drawShipExplosionPiece(p: VectorProgram, particle: Particle) {
     return;
   }
   const piece = SHIP_EXPLOSION_PIECES[particle.shape % SHIP_EXPLOSION_PIECES.length];
-  p.moveTo(particle.x, particle.y).lineTo(particle.x + piece.x * SHIP_EXPLOSION_SCALE, particle.y + piece.y * SHIP_EXPLOSION_SCALE, 1.12);
+  p.moveTo(particle.x, particle.y).lineTo(particle.x + piece.x * SHIP_EXPLOSION_SCALE, particle.y + piece.y * SHIP_EXPLOSION_SCALE, SHIP_EXPLOSION_INTENSITY);
 }
 
 function lineLocal(p: VectorProgram, x: number, y: number, x1: number, y1: number, x2: number, y2: number, scale: number, intensity: number) {
@@ -912,25 +911,65 @@ function rand(min: number, max: number) {
   return min + Math.random() * (max - min);
 }
 
-const SHARPNEL_BASE_POINTS: Vec2[] = [
-  { x: -1, y: 0 },
-  { x: -1, y: -1 },
-  { x: 1, y: -1 },
-  { x: 0.75, y: 0.25 },
-  { x: 1, y: -0.5 },
-  { x: 0, y: 1 },
-  { x: 0.25, y: 0.75 },
-  { x: -0.25, y: 0.75 },
-  { x: -1, y: -0.25 },
-  { x: -0.75, y: 0.25 },
-];
+const ROCK_EXPLOSION_INTENSITY = 2.1;
+const SHIP_EXPLOSION_INTENSITY = ROCK_EXPLOSION_INTENSITY * (12 / 7);
 
-// SharpPatPtrTbl order in the original points at patterns 4, 3, 2, 1. The
-// patterns are the same shrapnel arrangement with small size offsets to fill
-// the visible gaps between the power-of-two VG scale jumps.
-const SHARPNEL_PATTERNS: Vec2[][] = [0.714, 0.857, 1, 0.714].map((patternScale) =>
-  SHARPNEL_BASE_POINTS.map((point) => ({ x: point.x * patternScale, y: point.y * patternScale })),
-);
+const SHARPNEL_SOURCE_NORMALIZER = 2048;
+
+// Source-derived asteroid/saucer shrapnel. The ROM uses b=0 moves followed by
+// b=7 zero-vectors, so these are cumulative dot positions rather than line
+// segments. The local game stores rocks by center, while the arcade vector
+// routines are beam-anchor based, so the converted clouds are box-centered.
+const SHARPNEL_PATTERNS: Vec2[][] = [
+  sourcePatternFromMoves([
+    { x: -640, y: 0 },
+    { x: -640, y: -640 },
+    { x: 640, y: -640 },
+    { x: 960, y: 320 },
+    { x: 640, y: -320 },
+    { x: 0, y: 640 },
+    { x: 320, y: 960 },
+    { x: -320, y: 960 },
+    { x: -640, y: -160 },
+    { x: -960, y: 320 },
+  ]),
+  sourcePatternFromMoves([
+    { x: -768, y: 0 },
+    { x: -768, y: -768 },
+    { x: 768, y: -768 },
+    { x: 576, y: 192 },
+    { x: 768, y: -384 },
+    { x: 0, y: 768 },
+    { x: 192, y: 576 },
+    { x: -192, y: 576 },
+    { x: -768, y: -192 },
+    { x: -576, y: 192 },
+  ]),
+  sourcePatternFromMoves([
+    { x: -896, y: 0 },
+    { x: -896, y: -896 },
+    { x: 896, y: -896 },
+    { x: 672, y: 224 },
+    { x: 896, y: -448 },
+    { x: 0, y: 896 },
+    { x: 224, y: 672 },
+    { x: -224, y: 672 },
+    { x: -896, y: -224 },
+    { x: -672, y: 224 },
+  ]),
+  sourcePatternFromMoves([
+    { x: -1024, y: 0 },
+    { x: -1024, y: -1024 },
+    { x: 1024, y: -1024 },
+    { x: 768, y: 256 },
+    { x: 512, y: -256 },
+    { x: 0, y: 1024 },
+    { x: 256, y: 768 },
+    { x: -256, y: 768 },
+    { x: -512, y: -128 },
+    { x: -768, y: 256 },
+  ]),
+];
 const ROCK_EXPLOSION_STEPS = buildRockExplosionSteps();
 const ROCK_EXPLOSION_LIFE = ROCK_EXPLOSION_STEPS.length / ASTEROIDS_VG_HZ;
 
@@ -989,6 +1028,26 @@ function buildShipExplosionSteps(): ShipExplosionStep[] {
     steps.push({ startIndex: ((obj ^ 0xff) & 0x70) >> 3 });
   }
   return steps;
+}
+
+function sourcePatternFromMoves(moves: Vec2[]) {
+  let x = 0;
+  let y = 0;
+  const points = moves.map((move) => {
+    x += move.x;
+    y += move.y;
+    return { x, y };
+  });
+  const minX = Math.min(...points.map((point) => point.x));
+  const maxX = Math.max(...points.map((point) => point.x));
+  const minY = Math.min(...points.map((point) => point.y));
+  const maxY = Math.max(...points.map((point) => point.y));
+  const centerX = (minX + maxX) / 2;
+  const centerY = (minY + maxY) / 2;
+  return points.map((point) => ({
+    x: (point.x - centerX) / SHARPNEL_SOURCE_NORMALIZER,
+    y: (point.y - centerY) / SHARPNEL_SOURCE_NORMALIZER,
+  }));
 }
 
 function twosComplementByte(value: number) {
