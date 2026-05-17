@@ -7,8 +7,8 @@ const WORLD_H = 1.5;
 const HALF_W = WORLD_W / 2;
 const HALF_H = WORLD_H / 2;
 const MAX_PLAYER_SHOTS = 4;
-const SHIP_DRAW_SCALE = 0.00128;
-const SHIP_RADIUS = 0.036;
+const SHIP_DRAW_SCALE = 0.00115;
+const SHIP_RADIUS = 0.032;
 const RESPAWN_TIME = 1.8;
 const ASTEROIDS_VG_HZ = ASTEROIDS_VECTOR_HZ;
 const SAUCER_UPDATE_PERIOD = 4 / ASTEROIDS_VG_HZ;
@@ -679,7 +679,7 @@ export class AsteroidsGame {
     drawText(p, padScore(Math.max(this.highScore, 10000)), -0.02, 0.67, 0.034, 0.62);
     if (this.mode === "playing") {
       for (let i = 0; i < Math.max(0, this.lives); i += 1) {
-        drawShip(p, -0.86 + i * 0.075, 0.515, 0, false, time, 0.62);
+        drawShip(p, -0.86 + i * 0.068, 0.515, 0, false, time, 0.62);
       }
     }
   }
@@ -920,8 +920,8 @@ function rand(min: number, max: number) {
 
 const ASTEROIDS_BASE_COLOR: [number, number, number] = [0.88, 0.95, 1];
 const ASTEROIDS_BASE_INTENSITY = 0.88;
-const ROCK_EXPLOSION_INTENSITY = 13.5;
-const ROCK_EXPLOSION_DOT_DWELL = 0.08;
+const ROCK_EXPLOSION_INTENSITY = 0.82;
+const ROCK_EXPLOSION_DOT_DWELL = 0.05;
 const SHIP_EXPLOSION_INTENSITY = ROCK_EXPLOSION_INTENSITY * (12 / 7);
 
 const SHARPNEL_SOURCE_NORMALIZER = 2048;
