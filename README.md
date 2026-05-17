@@ -121,14 +121,14 @@ The implementation is based on public technical references about vector monitors
 Primary references:
 
 - [Wikipedia: Vector monitor](https://en.wikipedia.org/wiki/Vector_monitor)
-- [Jed Margolin: The Secret Life of X-Y Monitors](https://www.jmargolin.com/xy/xymon.pdf)
-- [Jed Margolin: The Atari Color X-Y Monitor](https://www.jmargolin.com/vgens/vgens.htm)
+- [Jed Margolin: The Secret Life of X-Y Monitors](http://www.jmargolin.com/xy/xymon.pdf)
+- [Jed Margolin: The Atari Color X-Y Monitor](http://www.jmargolin.com/vgens/vgens.htm)
 - [Atari Quadrascan Color X-Y Display service manual](https://manualzz.com/doc/11348630/atari-quadrascan-color-x-y-display-service-manual)
 - [TekWiki: Tektronix 4010](https://w140.com/tekwiki/wiki/4010)
-- [Tektronix PLOT-10 Terminal Control System User's Manual](https://w140.com/tekwiki/images/2/20/062-1288-00.pdf)
+- [Tektronix PLOT-10 Terminal Control System User's Manual](https://bitsavers.trailing-edge.com/pdf/tektronix/plot10/062-1474-00_PLOT-10_Terminal_Control_System_4010_Users_Manual_Apr1972.pdf)
 - [HP Journal, December 1967](https://vtda.org/pubs/HP_Journal/HP_Journal_1967-12.pdf)
-- [Derek Holzer: Vector Synthesis](https://macumbista.net/wp-content/uploads/2018/12/VectorSynthesis_DerekHolzer_2018.pdf)
-- [Alvy Ray Smith: Special Effects for Star Trek II: The Genesis Demo](https://alvyray.com/Papers/CG/StarTrekII.pdf)
+- [Derek Holzer: Vector Synthesis](https://aaltodoc.aalto.fi/bitstream/handle/123456789/38066/master_Holzer_Ian_2019.pdf)
+- [Alvy Ray Smith: Special Effects for Star Trek II: The Genesis Demo](https://alvyray.com/Papers/CG/StarTrekII_GenesisDemo.pdf)
 
 More source mapping is in [`docs/references.md`](docs/references.md), and the project scope is captured in [`VECTOR_MONITOR_PRD.md`](VECTOR_MONITOR_PRD.md).
 
