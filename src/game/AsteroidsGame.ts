@@ -920,7 +920,7 @@ function rand(min: number, max: number) {
 
 const ASTEROIDS_BASE_COLOR: [number, number, number] = [0.88, 0.95, 1];
 const ASTEROIDS_BASE_INTENSITY = 0.88;
-const ROCK_EXPLOSION_INTENSITY = 0.82;
+const ROCK_EXPLOSION_INTENSITY = 0.96;
 const ROCK_EXPLOSION_DOT_DWELL = 0.05;
 const SHIP_EXPLOSION_INTENSITY = ROCK_EXPLOSION_INTENSITY * (12 / 7);
 
