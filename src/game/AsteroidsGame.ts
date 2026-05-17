@@ -212,7 +212,7 @@ export class AsteroidsGame {
   commands(time: number): VectorCommand[] {
     const p = this.program;
     p.commands.length = 0;
-    p.color(0.88, 0.95, 1).intensity(0.88);
+    p.color(0.88, 0.95, 1).intensity(ASTEROIDS_BASE_INTENSITY);
     this.drawHud(p, time);
 
     for (const rock of this.rocks) {
@@ -859,11 +859,13 @@ function drawShot(p: VectorProgram, x: number, y: number, intensity: number) {
 function drawExplosionPic(p: VectorProgram, x: number, y: number, scale: number, step: RockExplosionStep) {
   const points = SHARPNEL_PATTERNS[step.pic] ?? SHARPNEL_PATTERNS[SHARPNEL_PATTERNS.length - 1];
   const pointScale = 0.19 * scale * step.scale;
+  p.intensity(ROCK_EXPLOSION_INTENSITY);
   for (const point of points) {
     const px = x + point.x * pointScale;
     const py = y + point.y * pointScale;
-    p.moveTo(px, py).lineTo(px, py, ROCK_EXPLOSION_INTENSITY);
+    p.moveTo(px, py).lineTo(px, py, ROCK_EXPLOSION_INTENSITY).dwell(ROCK_EXPLOSION_DOT_DWELL);
   }
+  p.intensity(ASTEROIDS_BASE_INTENSITY);
 }
 
 function drawShipExplosionPiece(p: VectorProgram, particle: Particle) {
@@ -911,7 +913,9 @@ function rand(min: number, max: number) {
   return min + Math.random() * (max - min);
 }
 
-const ROCK_EXPLOSION_INTENSITY = 2.1;
+const ASTEROIDS_BASE_INTENSITY = 0.88;
+const ROCK_EXPLOSION_INTENSITY = 7.5;
+const ROCK_EXPLOSION_DOT_DWELL = 0.22;
 const SHIP_EXPLOSION_INTENSITY = ROCK_EXPLOSION_INTENSITY * (12 / 7);
 
 const SHARPNEL_SOURCE_NORMALIZER = 2048;
