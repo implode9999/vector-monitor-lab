@@ -794,7 +794,7 @@ function drawWrappedSaucer(p: VectorProgram, saucer: Saucer) {
 function drawWrappedExplosion(p: VectorProgram, explosion: RockExplosion) {
   const step = rockExplosionStep(explosion);
   const radius = 0.12 * explosion.scale;
-  const intensity = 0.86;
+  const intensity = 1.18;
   const ox = wrapOffsetX(explosion.x, radius);
   const oy = wrapOffsetY(explosion.y, radius);
   drawExplosionPic(p, explosion.x, explosion.y, explosion.scale, step, intensity);
@@ -872,7 +872,7 @@ function drawShipExplosionPiece(p: VectorProgram, particle: Particle) {
     return;
   }
   const piece = SHIP_EXPLOSION_PIECES[particle.shape % SHIP_EXPLOSION_PIECES.length];
-  p.moveTo(particle.x, particle.y).lineTo(particle.x + piece.x * SHIP_EXPLOSION_SCALE, particle.y + piece.y * SHIP_EXPLOSION_SCALE, 0.82);
+  p.moveTo(particle.x, particle.y).lineTo(particle.x + piece.x * SHIP_EXPLOSION_SCALE, particle.y + piece.y * SHIP_EXPLOSION_SCALE, 1.12);
 }
 
 function lineLocal(p: VectorProgram, x: number, y: number, x1: number, y1: number, x2: number, y2: number, scale: number, intensity: number) {
