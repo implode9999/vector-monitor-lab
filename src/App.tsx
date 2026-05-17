@@ -408,7 +408,7 @@ export function App() {
   const latestSnapshotRef = useRef<AsteroidsSnapshot>(gameRef.current.snapshot());
   const latestCarrierFpsRef = useRef(0);
   const helpHideTimerRef = useRef<number | null>(null);
-  const userAdjustedParamsRef = useRef(false);
+  const sessionPresetParamsRef = useRef<Partial<Record<MonitorPresetName, MonitorParams>>>({ "asteroids-bw": paramsRef.current });
   const [params, setParams] = useState<MonitorParams>(paramsRef.current);
   const [scene, setScene] = useState<DemoScene>("asteroids");
   const [stats, setStats] = useState<MonitorStats>({ vectors: 0, samples: 0, phosphorLoad: 0, simulatedRefreshHz: 0 });
@@ -426,27 +426,44 @@ export function App() {
     };
   }, []);
 
+  const rememberedPresetParams = useCallback((preset: MonitorPresetName, current?: MonitorParams) => {
+    const remembered = sessionPresetParamsRef.current[preset];
+    if (!remembered) {
+      return presetWithUserDisplayToggles(preset, current);
+    }
+    return {
+      ...remembered,
+      temporalSweep: highRefreshPreferenceRef.current,
+      antiAlias: current?.antiAlias ?? remembered.antiAlias,
+    };
+  }, [presetWithUserDisplayToggles]);
+
   useEffect(() => {
     paramsRef.current = params;
+    sessionPresetParamsRef.current[params.preset] = params;
     monitorRef.current?.setParams(params);
   }, [params]);
 
   useEffect(() => {
+    const leavingAsteroids = sceneRef.current === "asteroids" && scene !== "asteroids";
+    if (leavingAsteroids) {
+      gameRef.current.releaseControlsAndAudio();
+    }
     sceneRef.current = scene;
     sceneStartedAtRef.current = performance.now() / 1000;
     monitorRef.current?.clear();
     if (scene === "storage") {
-      setParams((current) => presetWithUserDisplayToggles("storage-green", current));
+      setParams((current) => rememberedPresetParams("storage-green", current));
       return;
     }
     if (scene === "asteroids") {
-      setParams((current) => presetWithUserDisplayToggles("asteroids-bw", current));
+      setParams((current) => rememberedPresetParams("asteroids-bw", current));
       return;
     }
     if (["asteroids-bw", "storage-green"].includes(paramsRef.current.preset)) {
-      setParams((current) => presetWithUserDisplayToggles("arcade-rgb", current));
+      setParams((current) => rememberedPresetParams("arcade-rgb", current));
     }
-  }, [presetWithUserDisplayToggles, scene]);
+  }, [rememberedPresetParams, scene]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -479,28 +496,32 @@ export function App() {
     let latestCarrierFps = 0;
 
     const setKey = (event: KeyboardEvent, down: boolean) => {
+      const mapped = asteroidsKeyMap[event.code];
+      if (!mapped) {
+        return;
+      }
       if (sceneRef.current === "asteroids") {
-        const mapped = asteroidsKeyMap[event.code];
-        if (!mapped) {
-          return;
-        }
         event.preventDefault();
         if (down) {
           audio.unlock();
         }
+        const wasDown = gameRef.current.input[mapped];
         gameRef.current.input[mapped] = down;
         if (down && mapped === "start") {
           gameRef.current.requestStart();
         }
-        if (down && mapped === "fire") {
+        if (down && !wasDown && mapped === "fire") {
           gameRef.current.requestFire();
         }
-        if (down && mapped === "hyperspace") {
+        if (down && !wasDown && mapped === "hyperspace") {
           gameRef.current.requestHyperspace();
         }
         return;
       }
 
+      if (!down) {
+        gameRef.current.input[mapped] = false;
+      }
     };
     const onKeyDown = (event: KeyboardEvent) => setKey(event, true);
     const onKeyUp = (event: KeyboardEvent) => setKey(event, false);
@@ -582,17 +603,20 @@ export function App() {
   }, []);
 
   const setPreset = useCallback((preset: MonitorPresetName) => {
-    userAdjustedParamsRef.current = true;
+    setParams((current) => (current.preset === preset ? current : rememberedPresetParams(preset, current)));
+  }, [rememberedPresetParams]);
+
+  const resetCurrentPreset = useCallback(() => {
+    const preset = paramsRef.current.preset;
+    delete sessionPresetParamsRef.current[preset];
     setParams((current) => presetWithUserDisplayToggles(preset, current));
   }, [presetWithUserDisplayToggles]);
 
   const updateControl = useCallback((key: NumericParamKey, value: number) => {
-    userAdjustedParamsRef.current = true;
     setParams((current) => (current[key] === value ? current : { ...current, [key]: value }));
   }, []);
 
   const resetControl = useCallback((key: NumericParamKey) => {
-    userAdjustedParamsRef.current = true;
     setParams((current) => {
       const defaultValue = paramsForPreset(current.preset)[key];
       return current[key] === defaultValue ? current : { ...current, [key]: defaultValue };
@@ -600,13 +624,11 @@ export function App() {
   }, []);
 
   const updateTemporalSweep = useCallback((temporalSweep: boolean) => {
-    userAdjustedParamsRef.current = true;
     highRefreshPreferenceRef.current = temporalSweep;
     setParams((current) => (current.temporalSweep === temporalSweep ? current : { ...current, temporalSweep }));
   }, []);
 
   const updateAntiAlias = useCallback((antiAlias: boolean) => {
-    userAdjustedParamsRef.current = true;
     setParams((current) => (current.antiAlias === antiAlias ? current : { ...current, antiAlias }));
   }, []);
 
@@ -695,7 +717,7 @@ export function App() {
         <div className="panel-header">
           <SlidersHorizontal size={19} />
           <h2>Hardware Parameters</h2>
-          <button className="icon-button" title="Reset current preset" onClick={() => setPreset(params.preset)}>
+          <button className="icon-button" title="Reset current preset" onClick={resetCurrentPreset}>
             <RotateCcw size={17} />
           </button>
         </div>

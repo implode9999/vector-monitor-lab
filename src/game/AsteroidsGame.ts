@@ -157,7 +157,7 @@ export class AsteroidsGame {
       this.updateRockExplosions(step);
       this.updateBeat(step);
       this.collide();
-      if (this.rocks.length === 0 && this.particles.length < 8 && this.rockExplosions.length === 0) {
+      if (this.readyForNextWave()) {
         this.nextWave();
       }
     } else {
@@ -185,6 +185,22 @@ export class AsteroidsGame {
 
   requestHyperspace() {
     this.queuedHyperspace = true;
+  }
+
+  releaseControlsAndAudio() {
+    this.input.left = false;
+    this.input.right = false;
+    this.input.thrust = false;
+    this.input.fire = false;
+    this.input.hyperspace = false;
+    this.input.start = false;
+    this.fireLatch = false;
+    this.hyperLatch = false;
+    this.queuedFire = false;
+    this.queuedHyperspace = false;
+    this.emit("thrustStop");
+    this.lastThrusting = false;
+    this.clearSaucer(true, true);
   }
 
   drainSoundEvents(): AsteroidsSoundEvent[] {
@@ -261,12 +277,11 @@ export class AsteroidsGame {
     this.nextBonus = 10000;
     this.lives = 3;
     this.wave = 0;
+    this.saucerReloadTicks = SAUCER_START_RELOAD_TICKS;
     this.shots = [];
-    this.saucerShots = [];
     this.particles = [];
     this.rockExplosions = [];
-    this.saucer = null;
-    this.emit("saucerStop");
+    this.clearSaucer(true, true);
     this.emit("thrustStop");
     this.lastThrusting = false;
     this.beatTimer = 0.75;
@@ -278,8 +293,7 @@ export class AsteroidsGame {
 
   private nextWave() {
     this.wave += 1;
-    this.saucer = null;
-    this.saucerShots = [];
+    this.clearSaucer(true, false);
     this.saucerTimer = saucerTicksToSeconds(this.saucerReloadTicks);
     this.spawnRocks(Math.min(11, 4 + (this.wave - 1) * 2));
     this.ship.visible = true;
@@ -415,6 +429,7 @@ export class AsteroidsGame {
 
     this.saucer.x += this.saucer.vx * dt;
     this.saucer.y += this.saucer.vy * dt;
+    wrapY(this.saucer);
     this.saucer.life -= dt;
     this.saucer.actionTimer -= dt;
     this.saucer.yChangeTimer -= dt;
@@ -427,8 +442,7 @@ export class AsteroidsGame {
       this.saucer.actionTimer += SAUCER_ACTION_PERIOD;
     }
     if (this.saucer.life <= 0 || this.saucer.x < -1.18 || this.saucer.x > 1.18) {
-      this.saucer = null;
-      this.emit("saucerStop");
+      this.clearSaucer(false, false);
       this.saucerTimer = saucerTicksToSeconds(this.saucerReloadTicks);
     }
   }
@@ -530,6 +544,21 @@ export class AsteroidsGame {
       }
     }
 
+    for (let shotIndex = this.saucerShots.length - 1; shotIndex >= 0; shotIndex -= 1) {
+      const shot = this.saucerShots[shotIndex];
+      let rockHit: Rock | null = null;
+      for (const rock of this.rocks) {
+        if (distanceWrapped(shot, rock) < radiusForRock(rock)) {
+          rockHit = rock;
+          break;
+        }
+      }
+      if (rockHit) {
+        this.destroyRock(rockHit, shot, false);
+        this.saucerShots.splice(shotIndex, 1);
+      }
+    }
+
     if (this.saucer) {
       let hitIndex = -1;
       const hitRadius = this.saucer.size === "small" ? 0.045 : 0.07;
@@ -543,40 +572,69 @@ export class AsteroidsGame {
         this.addScore(this.saucer.size === "small" ? 990 : 200);
         this.spawnRockExplosion(this.saucer, 1.1);
         this.emit("bangLarge");
-        this.emit("saucerStop");
-        this.saucer = null;
+        this.clearSaucer(false, false);
         this.shots.splice(hitIndex, 1);
       }
     }
 
+    if (this.saucer) {
+      const saucerRadius = this.saucer.size === "small" ? 0.045 : 0.07;
+      let rockHit: Rock | null = null;
+      for (const rock of this.rocks) {
+        if (distanceWrapped(this.saucer, rock) < radiusForRock(rock) + saucerRadius) {
+          rockHit = rock;
+          break;
+        }
+      }
+      if (rockHit) {
+        this.destroyRock(rockHit, this.saucer, false);
+        this.spawnRockExplosion(this.saucer, 1.1);
+        this.emit("bangLarge");
+        this.clearSaucer(false, false);
+      }
+    }
+
     if (this.ship.visible && this.ship.invulnerable <= 0) {
-      let rockHit = false;
+      let rockHit: Rock | null = null;
       for (const rock of this.rocks) {
         if (distanceWrapped(this.ship, rock) < radiusForRock(rock) + SHIP_RADIUS) {
-          rockHit = true;
+          rockHit = rock;
           break;
         }
       }
-      const saucerHit = this.saucer && distanceWrapped(this.ship, this.saucer) < (this.saucer.size === "small" ? 0.075 : 0.1);
-      let shotHit = false;
-      for (const shot of this.saucerShots) {
+      const saucerHit = this.saucer && distanceWrapped(this.ship, this.saucer) < (this.saucer.size === "small" ? 0.075 : 0.1) ? this.saucer : null;
+      let shotHitIndex = -1;
+      for (let i = 0; i < this.saucerShots.length; i += 1) {
+        const shot = this.saucerShots[i];
         if (distanceWrapped(this.ship, shot) < SHIP_RADIUS) {
-          shotHit = true;
+          shotHitIndex = i;
           break;
         }
       }
-      if (rockHit || saucerHit || shotHit) {
+      if (rockHit || saucerHit || shotHitIndex >= 0) {
+        if (rockHit) {
+          this.destroyRock(rockHit, this.ship, true);
+        }
+        if (saucerHit) {
+          this.spawnRockExplosion(saucerHit, 1.1);
+          this.clearSaucer(false, false);
+        }
+        if (shotHitIndex >= 0) {
+          this.saucerShots.splice(shotHitIndex, 1);
+        }
         this.killShip();
       }
     }
   }
 
-  private destroyRock(rock: Rock, shot: Vec2) {
+  private destroyRock(rock: Rock, shot: Vec2, awardScore = true) {
     const rockIndex = this.rocks.indexOf(rock);
     if (rockIndex >= 0) {
       this.rocks.splice(rockIndex, 1);
     }
-    this.addScore(rock.size === 3 ? 20 : rock.size === 2 ? 50 : 100);
+    if (awardScore) {
+      this.addScore(rock.size === 3 ? 20 : rock.size === 2 ? 50 : 100);
+    }
     this.spawnRockExplosion(rock, rock.size === 3 ? 1.1 : rock.size === 2 ? 0.72 : 0.44);
     this.emit(rock.size === 3 ? "bangLarge" : rock.size === 2 ? "bangMedium" : "bangSmall");
 
@@ -614,6 +672,7 @@ export class AsteroidsGame {
       this.mode = "game-over";
       this.gameOverTimer = 6;
       this.ship.visible = false;
+      this.clearSaucer(true, false);
     }
   }
 
@@ -656,6 +715,27 @@ export class AsteroidsGame {
 
   private clearToRespawn() {
     return this.rocks.every((rock) => Math.hypot(rock.x, rock.y) > 0.22) && (!this.saucer || Math.hypot(this.saucer.x, this.saucer.y) > 0.24);
+  }
+
+  private readyForNextWave() {
+    return (
+      this.rocks.length === 0 &&
+      !this.saucer &&
+      this.saucerShots.length === 0 &&
+      this.rockExplosions.length === 0 &&
+      this.particles.length === 0 &&
+      this.ship.visible
+    );
+  }
+
+  private clearSaucer(clearShots: boolean, forceStop: boolean) {
+    if (this.saucer || forceStop) {
+      this.emit("saucerStop");
+    }
+    this.saucer = null;
+    if (clearShots) {
+      this.saucerShots = [];
+    }
   }
 
   private updateAttract(dt: number) {
@@ -741,6 +821,11 @@ function edgeSpawn(side: number): Vec2 {
 function wrap(p: Vec2) {
   if (p.x < -HALF_W) p.x += WORLD_W;
   if (p.x > HALF_W) p.x -= WORLD_W;
+  if (p.y < -HALF_H) p.y += WORLD_H;
+  if (p.y > HALF_H) p.y -= WORLD_H;
+}
+
+function wrapY(p: Vec2) {
   if (p.y < -HALF_H) p.y += WORLD_H;
   if (p.y > HALF_H) p.y -= WORLD_H;
 }
