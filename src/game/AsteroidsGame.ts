@@ -869,9 +869,7 @@ function drawExplosionPic(p: VectorProgram, x: number, y: number, scale: number,
 }
 
 function drawHotShrapnelDot(p: VectorProgram, x: number, y: number) {
-  for (let i = 0; i < ROCK_EXPLOSION_DOT_PASSES; i += 1) {
-    p.moveTo(x, y).lineTo(x, y, ROCK_EXPLOSION_INTENSITY, [1, 1, 1]);
-  }
+  p.moveTo(x, y).lineTo(x, y, ROCK_EXPLOSION_INTENSITY, [1, 1, 1]);
   p.dwell(ROCK_EXPLOSION_DOT_DWELL);
 }
 
@@ -922,9 +920,8 @@ function rand(min: number, max: number) {
 
 const ASTEROIDS_BASE_COLOR: [number, number, number] = [0.88, 0.95, 1];
 const ASTEROIDS_BASE_INTENSITY = 0.88;
-const ROCK_EXPLOSION_INTENSITY = 42;
-const ROCK_EXPLOSION_DOT_PASSES = 5;
-const ROCK_EXPLOSION_DOT_DWELL = 0.34;
+const ROCK_EXPLOSION_INTENSITY = 13.5;
+const ROCK_EXPLOSION_DOT_DWELL = 0.08;
 const SHIP_EXPLOSION_INTENSITY = ROCK_EXPLOSION_INTENSITY * (12 / 7);
 
 const SHARPNEL_SOURCE_NORMALIZER = 2048;
