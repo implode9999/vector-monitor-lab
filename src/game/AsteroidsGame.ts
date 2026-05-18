@@ -294,7 +294,7 @@ export class AsteroidsGame {
   private nextWave() {
     this.wave += 1;
     this.clearSaucer(true, false);
-    this.saucerTimer = saucerTicksToSeconds(this.saucerReloadTicks);
+    this.resetSaucerTimer();
     this.spawnRocks(Math.min(11, 4 + (this.wave - 1) * 2));
     this.ship.visible = true;
     this.ship.respawn = 0;
@@ -442,8 +442,7 @@ export class AsteroidsGame {
       this.saucer.actionTimer += SAUCER_ACTION_PERIOD;
     }
     if (this.saucer.life <= 0 || this.saucer.x < -1.18 || this.saucer.x > 1.18) {
-      this.clearSaucer(false, false);
-      this.saucerTimer = saucerTicksToSeconds(this.saucerReloadTicks);
+      this.clearSaucer(false, false, true);
     }
   }
 
@@ -572,7 +571,7 @@ export class AsteroidsGame {
         this.addScore(this.saucer.size === "small" ? 990 : 200);
         this.spawnRockExplosion(this.saucer, 1.1);
         this.emit("bangLarge");
-        this.clearSaucer(false, false);
+        this.clearSaucer(false, false, true);
         this.shots.splice(hitIndex, 1);
       }
     }
@@ -590,7 +589,7 @@ export class AsteroidsGame {
         this.destroyRock(rockHit, this.saucer, false);
         this.spawnRockExplosion(this.saucer, 1.1);
         this.emit("bangLarge");
-        this.clearSaucer(false, false);
+        this.clearSaucer(false, false, true);
       }
     }
 
@@ -617,7 +616,7 @@ export class AsteroidsGame {
         }
         if (saucerHit) {
           this.spawnRockExplosion(saucerHit, 1.1);
-          this.clearSaucer(false, false);
+          this.clearSaucer(false, false, true);
         }
         if (shotHitIndex >= 0) {
           this.saucerShots.splice(shotHitIndex, 1);
@@ -672,7 +671,7 @@ export class AsteroidsGame {
       this.mode = "game-over";
       this.gameOverTimer = 6;
       this.ship.visible = false;
-      this.clearSaucer(true, false);
+      this.clearSaucer(true, false, true);
     }
   }
 
@@ -728,7 +727,7 @@ export class AsteroidsGame {
     );
   }
 
-  private clearSaucer(clearShots: boolean, forceStop: boolean) {
+  private clearSaucer(clearShots: boolean, forceStop: boolean, resetTimer = false) {
     if (this.saucer || forceStop) {
       this.emit("saucerStop");
     }
@@ -736,6 +735,13 @@ export class AsteroidsGame {
     if (clearShots) {
       this.saucerShots = [];
     }
+    if (resetTimer) {
+      this.resetSaucerTimer();
+    }
+  }
+
+  private resetSaucerTimer() {
+    this.saucerTimer = saucerTicksToSeconds(this.saucerReloadTicks);
   }
 
   private updateAttract(dt: number) {
